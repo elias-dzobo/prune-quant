@@ -1,0 +1,26 @@
+precision:
+  fp16:
+    min: -65504.0
+    max: 65504.0
+
+  bf16:
+    min: -3.38953139e+38
+    max: 3.38953139e+38
+
+  fp8:
+  # float8 e4m3fn (PyTorch/NVIDIA inference default)
+    min: -448.0
+    max: 448.0
+
+  fp4:
+  # nvfp4 e2m1
+    min: -6.0
+    max: 6.0
+
+  int8:
+    min: -128
+    max: 127
+
+  int4:
+    min: -8
+    max: 7
