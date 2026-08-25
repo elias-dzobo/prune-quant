@@ -116,37 +116,73 @@ Implementation notes
 - Rounding: standard round-to-nearest; some runtimes use floor or
   stochastic rounding.
 - Quantize divides by scale; dequantize multiplies by scale (not the reverse).
+
+``LinearQuantizer`` currently implements Approach 2 (symmetric fake-quant).
+Bounds are loaded from ``src/config/qbits.yml``.
 """
-import yaml 
-import torch 
+from pathlib import Path
+
+import torch
+import yaml
+
+_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "qbits.yml"
 
 
-precision_config = yaml.load(open('config/qbits.yml'), Loader=yaml.FullLoader)
+def load_precision_config(path: Path | None = None) -> dict:
+    config_path = path or _CONFIG_PATH
+    with config_path.open() as config_file:
+        return yaml.safe_load(config_file)["precision"]
 
 
 class LinearQuantizer:
-    def __init__(self, precision: str):
-        self.scale = None 
+    """Symmetric per-tensor weight quantizer (Approach 2)."""
+
+    def __init__(self, precision: str = "int8", config_path: Path | None = None):
+        self.precision = precision
+        self.precision_config = load_precision_config(config_path)
+        if precision not in self.precision_config:
+            raise ValueError(
+                f"Unknown precision '{precision}'. "
+                f"Available: {list(self.precision_config)}"
+            )
+        self.scales: dict[int, float] = {}
+
+    def _q_bounds(self) -> tuple[float, float]:
+        bounds = self.precision_config[self.precision] 
+        return float(bounds["min"]), float(bounds["max"])
 
     def quantize_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
-        tensor = torch.abs(tensor)
-        tensor_max = torch.max(tensor)
-        scale = tensor_max / self.precision_config[precision]['max']
-        self.scale = scale
-        quantized_tensor = torch.round(tensor / scale)
-        return quantized_tensor
+        """
+        Fake-quantize a tensor using Approach 2 (symmetric abs-max).
 
-    def dequantize_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
-        return tensor * self.scale
+        Steps per tensor:
+          1. max_abs = max(|x|)
+          2. scale = max_abs / q_max
+          3. q = clamp(round(x / scale), q_min, q_max)
+          4. x_hat = q * scale
+
+        The returned tensor remains float-valued but reflects quantization error.
+        """
+        q_min, q_max = self._q_bounds()
+        max_abs = torch.max(torch.abs(tensor)).item()
+        if max_abs == 0.0:
+            return tensor.clone()
+
+        scale = max_abs / q_max
+        quantized = torch.clamp(torch.round(tensor / scale), q_min, q_max)
+        return quantized * scale
 
     def quantize_model(self, model: torch.nn.Module) -> torch.nn.Module:
-        for name, param in model.named_parameters():
+        """Quantize all prunable (dim > 1) parameters in place."""
+        for _, param in model.named_parameters():
             if param.dim() > 1:
                 param.data = self.quantize_tensor(param.data)
         return model
 
-    def dequantize_model(self, model: torch.nn.Module) -> torch.nn.Module:
-        for name, param in model.named_parameters():
-            if param.dim() > 1:
-                param.data = self.dequantize_tensor(param.data)
-        return model
+    def quantize_copy(self, model: torch.nn.Module) -> torch.nn.Module:
+        """Return a deep copy of the model with quantized weights."""
+        import copy
+
+        quantized_model = copy.deepcopy(model)
+        self.quantize_model(quantized_model)
+        return quantized_model

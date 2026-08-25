@@ -8,3 +8,18 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Datasets (downloadable, kept out of repo)
+data/
+*.tar.gz
+
+# Checkpoints & artifacts
+*.pt
+*.pth
+*.safetensors
+artifacts/
+runs/
+wandb/
+
+# OS / editor
+.DS_Store

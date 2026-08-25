@@ -1,7 +1,23 @@
 [project]
 name = "prune-quant"
 version = "0.1.0"
-description = "Add your description here"
+description = "Pruning and quantization pipeline with visual reporting"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "datasets>=2.18",
+    "matplotlib>=3.8",
+    "numpy>=1.26,<2",
+    "pyyaml>=6.0",
+    "torch>=2.2,<2.3",
+    "torchprofile>=0.0.4",
+    "torchvision>=0.17,<0.18",
+    "transformers>=4.40,<5",
+]
+
+[project.scripts]
+prune-quant-benchmark = "benchmark:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

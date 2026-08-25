@@ -1,0 +1,46 @@
+{
+  "model_name": "distilgpt2-wikitext",
+  "total_time_s": 608.2268973200116,
+  "stages": [
+    {
+      "name": "evaluate_base",
+      "wall_time_s": 29.852966277016094,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "sensitivity_scan",
+      "wall_time_s": 454.10253811400617,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "prune",
+      "wall_time_s": 0.9132118640118279,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "evaluate_pruned",
+      "wall_time_s": 39.977882231993135,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "quantize_base",
+      "wall_time_s": 0.7451973769930191,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "evaluate_quantized",
+      "wall_time_s": 41.461815332004335,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "quantize_pruned",
+      "wall_time_s": 0.6891757480043452,
+      "peak_memory_mib": null
+    },
+    {
+      "name": "evaluate_pruned_quantized",
+      "wall_time_s": 40.48411037598271,
+      "peak_memory_mib": null
+    }
+  ]
+}
